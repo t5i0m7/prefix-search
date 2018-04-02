@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
 #include "tst.h"
 
 /** constants insert, delete, max word(s) & stack nodes */
