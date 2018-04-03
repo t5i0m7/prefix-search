@@ -23,6 +23,16 @@ static double tvgetf(void)
     return sec;
 }
 
+/* remove comma */
+void rmcomma(char* s)
+{
+    size_t len = strlen(s);
+    for (int i=0 ; i < len ; i++)
+        if(s[i]==',')
+            s[i]=0;
+}
+
+
 /* simple trim '\n' from end of buffer filled by fgets */
 static void rmcrlf(char *s)
 {
@@ -48,14 +58,17 @@ int main(int argc, char **argv)
     }
 
     t1 = tvgetf();
-    while ((rtn = fscanf(fp, "%s", word)) != EOF) {
+    while ((rtn = fgets(word, WRDMAX,fp) != NULL)) {
         char *p = word;
+        rmcomma(p);
         if (!tst_ins_del(&root, &p, INS, CPY)) {
             fprintf(stderr, "error: memory exhausted, tst_insert.\n");
             fclose(fp);
             return 1;
         }
         idx++;
+        if(idx==30000)
+            break;
     }
     t2 = tvgetf();
 
