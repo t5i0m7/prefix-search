@@ -23,6 +23,16 @@ static double tvgetf(void)
 
     return sec;
 }
+/* delete comma and get the city*/
+void rmcomma(char *s)
+{
+    size_t len = strlen(s);
+    for(int i = 0 ; i < len ; i++)
+        if(s[i]==',')
+            s[i] = 0;
+
+}
+
 
 /* simple trim '\n' from end of buffer filled by fgets */
 static void rmcrlf(char *s)
@@ -33,13 +43,13 @@ static void rmcrlf(char *s)
 }
 
 #define IN_FILE "cities.txt"
-
+#define CITY_NUM 30000
 int main(int argc, char **argv)
 {
-    char word[WRDMAX] = "";
+    char word[CITY_NUM][WRDMAX];
     char *sgl[LMAX] = {NULL};
     tst_node *root = NULL, *res = NULL;
-    int rtn = 0, idx = 0, sidx = 0;
+    int rtn = 0, idx = 1, sidx = 0;
     FILE *fp = fopen(IN_FILE, "r");
     double t1, t2;
 
@@ -49,20 +59,23 @@ int main(int argc, char **argv)
     }
 
     t1 = tvgetf();
-    while ((rtn = fscanf(fp, "%s", word)) != EOF) {
-        char *p = word;
+    for ( ; (rtn = fgets(word[idx], WRDMAX , fp) != NULL ); idx++) {
+        rmcrlf(word[idx]);
+        rmcomma(word[idx]);
+        char *p = word[idx];
         /* FIXME: insert reference to each string */
         if (!tst_ins_del(&root, &p, INS, REF)) {
             fprintf(stderr, "error: memory exhausted, tst_insert.\n");
             fclose(fp);
             return 1;
         }
-        idx++;
+        // city num too big checj
+        if(idx > 30000)
+            break;
     }
     t2 = tvgetf();
-
     fclose(fp);
-    printf("ternary_tree, loaded %d words in %.6f sec\n", idx, t2 - t1);
+    printf("ternary_tree, loaded %d words in %.6f sec\n", idx-1, t2 - t1);
 
     for (;;) {
         char *p;
@@ -74,17 +87,17 @@ int main(int argc, char **argv)
             " d  delete word from the tree\n"
             " q  quit, freeing all data\n\n"
             "choice: ");
-        fgets(word, sizeof word, stdin);
+        fgets(word[0], sizeof word[0], stdin);
         p = NULL;
-        switch (*word) {
+        switch (*word[0]) {
         case 'a':
             printf("enter word to add: ");
-            if (!fgets(word, sizeof word, stdin)) {
+            if (!fgets(word[idx], sizeof word[idx], stdin)) {
                 fprintf(stderr, "error: insufficient input.\n");
                 break;
             }
-            rmcrlf(word);
-            p = word;
+            rmcrlf(word[idx]);
+            p = word[idx];
             t1 = tvgetf();
             /* FIXME: insert reference to each string */
             res = tst_ins_del(&root, &p, INS, REF);
@@ -98,45 +111,45 @@ int main(int argc, char **argv)
             break;
         case 'f':
             printf("find word in tree: ");
-            if (!fgets(word, sizeof word, stdin)) {
+            if (!fgets(word[0], sizeof word[0], stdin)) {
                 fprintf(stderr, "error: insufficient input.\n");
                 break;
             }
-            rmcrlf(word);
+            rmcrlf(word[0]);
             t1 = tvgetf();
-            res = tst_search(root, word);
+            res = tst_search(root, word[0]);
             t2 = tvgetf();
             if (res)
                 printf("  found %s in %.6f sec.\n", (char *) res, t2 - t1);
             else
-                printf("  %s not found.\n", word);
+                printf("  %s not found.\n", word[0]);
             break;
         case 's':
             printf("find words matching prefix (at least 1 char): ");
-            if (!fgets(word, sizeof word, stdin)) {
+            if (!fgets(word[0], sizeof word[0], stdin)) {
                 fprintf(stderr, "error: insufficient input.\n");
                 break;
             }
-            rmcrlf(word);
+            rmcrlf(word[0]);
             t1 = tvgetf();
-            res = tst_search_prefix(root, word, sgl, &sidx, LMAX);
+            res = tst_search_prefix(root, word[0], sgl, &sidx, LMAX);
             t2 = tvgetf();
             if (res) {
-                printf("  %s - searched prefix in %.6f sec\n\n", word, t2 - t1);
+                printf("  %s - searched prefix in %.6f sec\n\n", word[0], t2 - t1);
                 for (int i = 0; i < sidx; i++)
                     printf("suggest[%d] : %s\n", i, sgl[i]);
             } else
-                printf("  %s - not found\n", word);
+                printf("  %s - not found\n", word[0]);
             break;
         case 'd':
             printf("enter word to del: ");
-            if (!fgets(word, sizeof word, stdin)) {
+            if (!fgets(word[0], sizeof word[0], stdin)) {
                 fprintf(stderr, "error: insufficient input.\n");
                 break;
             }
-            rmcrlf(word);
-            p = word;
-            printf("  deleting %s\n", word);
+            rmcrlf(word[0]);
+            p = word[0];
+            printf("  deleting %s\n", word[0]);
             t1 = tvgetf();
             /* FIXME: remove reference to each string */
             res = tst_ins_del(&root, &p, DEL, REF);
@@ -144,8 +157,8 @@ int main(int argc, char **argv)
             if (res)
                 printf("  delete failed.\n");
             else {
-                printf("  deleted %s in %.6f sec\n", word, t2 - t1);
-                idx--;
+                printf("  deleted %s in %.6f sec\n", word[0], t2 - t1);
+                // fragmention problem
             }
             break;
         case 'q':
