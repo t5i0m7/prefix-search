@@ -49,8 +49,8 @@ int main(int argc, char **argv)
     char word[CITY_NUM][WRDMAX];
     char *sgl[LMAX] = {NULL};
     tst_node *root = NULL, *res = NULL;
-    int rtn = 0, idx = 1, sidx = 0;
-    FILE *fp = fopen(IN_FILE, "r");
+    int rtn = 0, idx = 1, sidx = 0, bench_flag = 0;
+    FILE *fp = fopen(IN_FILE, "r"),*fp_search,*fp_tst;//*fp_redo = fopen("cities_redo","w");
     double t1, t2;
 
     if (!fp) { /* prompt, open, validate file for reading */
@@ -58,23 +58,46 @@ int main(int argc, char **argv)
         return 1;
     }
 
+
+
     t1 = tvgetf();
-    for ( ; (rtn = fgets(word[idx], WRDMAX , fp) != NULL ); idx++) {
+    for ( ; (rtn = fgets(word[idx], WRDMAX , fp) != NULL ) && idx <= 30000; idx++) {
         rmcrlf(word[idx]);
         rmcomma(word[idx]);
         char *p = word[idx];
+        //fprintf(fp_redo,"%s\n",p);
         /* FIXME: insert reference to each string */
         if (!tst_ins_del(&root, &p, INS, REF)) {
             fprintf(stderr, "error: memory exhausted, tst_insert.\n");
             fclose(fp);
             return 1;
         }
-        // city num too big checj
-        if(idx > 30000)
-            break;
+
     }
     t2 = tvgetf();
+
     fclose(fp);
+    //fclose(fp_redo);
+
+    /* Determine whether a bench mode is */
+    if(argc == 2 && strcmp(argv[1],"--bench")) {
+        bench_flag = 1;
+        fp_tst=fopen("output_tst","a");
+        fp_search=fopen("output_search","a");
+    }
+
+    /*bench test write file*/
+    if(bench_flag) {
+        fprintf(fp_tst,"%f\n",t2-t1);
+        t1=tvgetf();
+        res = tst_search_prefix(root, "Ame", sgl, &sidx, LMAX);
+        t2=tvgetf();
+        fprintf(fp_search,"%f\n",t2-t1);
+        fclose(fp_tst);
+        fclose(fp_search);
+        return 0;
+    }
+
     printf("ternary_tree, loaded %d words in %.6f sec\n", idx-1, t2 - t1);
 
     for (;;) {
